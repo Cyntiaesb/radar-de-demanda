@@ -1,0 +1,12 @@
+.env
+data/
+dossies_exemplo/
+docs/
+dash_palestra/
+slides_v5/
+HANDOFF.md
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.DS_Store
