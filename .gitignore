@@ -10,3 +10,7 @@ __pycache__/
 .venv/
 node_modules/
 .DS_Store
+.claude/settings.local.json
+scripts/gerar_palestra_v4_pptx.py
+scripts/create_pitch_deck.py
+scripts/descobrir_fotografos.py

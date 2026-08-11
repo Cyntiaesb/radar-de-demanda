@@ -22,7 +22,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
         pass
 
 from anthropic import Anthropic
-from cookia.templates.landing_struct import LANDING_TEMPLATE, PROMPT_PREENCHER_LANDING, montar_landing_md
+from radar_de_demanda.templates.landing_struct import LANDING_TEMPLATE, PROMPT_PREENCHER_LANDING, montar_landing_md
 
 DOSSIES = ROOT / "data" / "dossies"
 
@@ -30,7 +30,7 @@ DOSSIES = ROOT / "data" / "dossies"
 def _ultimo_dossie() -> Path:
     jsons = sorted(DOSSIES.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not jsons:
-        print("❌ Nenhum dossiê. Rode `python scripts/cookia_run.py \"nicho\"` primeiro.")
+        print("❌ Nenhum dossiê. Rode `python scripts/radar_run.py \"nicho\"` primeiro.")
         sys.exit(1)
     return jsons[0]
 

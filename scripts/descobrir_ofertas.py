@@ -1,4 +1,4 @@
-"""Cookia — Pipeline standalone: descobre ofertas a partir de sinais reais.
+"""Radar de Demanda — Pipeline standalone: descobre ofertas a partir de sinais reais.
 
 Uso:
     python scripts/descobrir_ofertas.py
@@ -30,8 +30,8 @@ if env_file.exists():
 if not os.environ.get("ANTHROPIC_API_KEY"):
     print("❌ ANTHROPIC_API_KEY ausente"); sys.exit(1)
 
-from cookia.fontes.google_autocomplete import scrape_google_signals
-from cookia.fontes.reddit_br import scrape_reddit
+from radar_de_demanda.fontes.google_autocomplete import scrape_google_signals
+from radar_de_demanda.fontes.reddit_br import scrape_reddit
 
 # ──────────────────────────────────────────────────────
 # SEEDS: Marketing & Vendas (dor de quem vende/empreende)
@@ -151,7 +151,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     slug = f"marketing_vendas_{ts}"
 
-    print(f"🚀 Cookia — descoberta de ofertas: marketing & vendas")
+    print(f"🚀 Radar de Demanda — descoberta de ofertas: marketing & vendas")
     print(f"📂 Output base: {out_dir / slug}\n")
 
     # ── 1. Google Autocomplete ───────────────────────────
@@ -227,7 +227,7 @@ def main():
         json.dumps(analise, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # ── Markdown dossier ─────────────────────────────────
-    md = [f"# Dossiê Cookia — Marketing & Vendas BR",
+    md = [f"# Dossiê Radar de Demanda — Marketing & Vendas BR",
           f"_{datetime.now().strftime('%Y-%m-%d %H:%M')}_",
           "",
           f"**Sinais coletados:** {len(google_sinais)} Google + {len(reddit_sinais)} Reddit",

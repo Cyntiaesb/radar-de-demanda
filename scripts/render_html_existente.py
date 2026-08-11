@@ -18,7 +18,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from cookia.render_html import render_html
+from radar_de_demanda.render_html import render_html
 
 DOSSIES = ROOT / "data" / "dossies"
 

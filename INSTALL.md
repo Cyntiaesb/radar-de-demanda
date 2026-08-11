@@ -1,4 +1,4 @@
-# Instalar Cookia — Passo a Passo (Claude Code Desktop)
+# Instalar Radar de Demanda — Passo a Passo (Claude Code Desktop)
 
 Tempo total: **~10 minutos** na primeira vez. Depois, cada dossiê leva 30s pra começar.
 
@@ -28,18 +28,18 @@ Tempo total: **~10 minutos** na primeira vez. Depois, cada dossiê leva 30s pra 
 
 ---
 
-## Instalar o Cookia (uma vez)
+## Instalar o Radar de Demanda (uma vez)
 
 ### 1. Baixar o repositório
 
 Clone ou baixe o `.zip` deste repositório numa pasta que você lembre. Recomendo:
 
-- **Windows:** `C:\Users\SeuNome\Documents\COOKIA\`
-- **Mac:** `~/Documents/COOKIA/`
+- **Windows:** `C:\Users\SeuNome\Documents\RADAR DE DEMANDA\`
+- **Mac:** `~/Documents/RADAR DE DEMANDA/`
 
 ### 2. Configurar a API key
 
-Dentro da pasta COOKIA, encontre o arquivo `.env.example`. Renomeie pra `.env` e abra no bloco de notas. Cole sua chave:
+Dentro da pasta RADAR DE DEMANDA, encontre o arquivo `.env.example`. Renomeie pra `.env` e abra no bloco de notas. Cole sua chave:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-sua-chave-aqui
@@ -49,10 +49,10 @@ Salve e feche.
 
 ### 3. Instalar dependências
 
-Abra o terminal **dentro da pasta COOKIA**:
+Abra o terminal **dentro da pasta RADAR DE DEMANDA**:
 
 - **Windows:** clique com botão direito na pasta segurando Shift → "Abrir terminal aqui"
-- **Mac:** abra Terminal e digite `cd ~/Documents/COOKIA`
+- **Mac:** abra Terminal e digite `cd ~/Documents/RADAR DE DEMANDA`
 
 Rode:
 
@@ -64,24 +64,24 @@ Espera ~1 minuto.
 
 ### 4. Copiar as skills pro Claude Code
 
-A pasta `.claude/skills/` do Cookia precisa ser visível pro Claude Code Desktop. Mais fácil:
+A pasta `.claude/skills/` do Radar de Demanda precisa ser visível pro Claude Code Desktop. Mais fácil:
 
-**Abra a pasta COOKIA dentro do Claude Code Desktop** (File → Open Folder). Pronto — ele lê automaticamente as skills da pasta `.claude/skills/`.
+**Abra a pasta RADAR DE DEMANDA dentro do Claude Code Desktop** (File → Open Folder). Pronto — ele lê automaticamente as skills da pasta `.claude/skills/`.
 
 ---
 
 ## Primeiro dossiê (toda vez)
 
-### 1. Abrir o Claude Code Desktop na pasta COOKIA
+### 1. Abrir o Claude Code Desktop na pasta RADAR DE DEMANDA
 
-Se já abriu, ok. Senão: File → Open Folder → escolha COOKIA.
+Se já abriu, ok. Senão: File → Open Folder → escolha RADAR DE DEMANDA.
 
 ### 2. Digitar o comando
 
 Na caixa de chat, digite:
 
 ```
-/cookia advocacia
+/radar advocacia
 ```
 
 (Troque "advocacia" pelo seu nicho.)
@@ -104,22 +104,22 @@ Tá tudo em **markdown** dentro de `data/dossies/`. Abra no próprio Claude Code
 Com o dossiê gerado, digite:
 
 ```
-/cookia-copy headline-landing
-/cookia-ads meta-primary-problem
+/radar-copy headline-landing
+/radar-ads meta-primary-problem
 ```
 
 O Claude pega automaticamente o dossiê mais recente e gera as variações.
 
 **Catálogo completo de prompts:**
-- Copy (30): veja `.claude/skills/cookia-copy/SKILL.md`
-- Ads (25): veja `.claude/skills/cookia-ads/SKILL.md`
+- Copy (30): veja `.claude/skills/radar-copy/SKILL.md`
+- Ads (25): veja `.claude/skills/radar-ads/SKILL.md`
 
 ---
 
 ## Problemas comuns
 
-**"Comando /cookia não aparece"**
-→ Você abriu a pasta COOKIA dentro do Claude Code? File → Open Folder.
+**"Comando /radar não aparece"**
+→ Você abriu a pasta RADAR DE DEMANDA dentro do Claude Code? File → Open Folder.
 
 **"Erro: ANTHROPIC_API_KEY não encontrada"**
 → Confira se você renomeou `.env.example` pra `.env` (sem o `.example`).
