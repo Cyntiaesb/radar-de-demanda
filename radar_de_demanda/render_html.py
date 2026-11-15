@@ -56,7 +56,7 @@ def render_html(
     parts: list[str] = []
     parts.append("<!doctype html><html lang='pt-BR'><head>")
     parts.append("<meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>")
-    parts.append(f"<title>Dossiê Pare de adivinhar — {e(nicho.title())}</title>")
+    parts.append(f"<title>Dossiê Radar de Demanda — {e(nicho.title())}</title>")
     parts.append("<link rel='preconnect' href='https://fonts.googleapis.com'>")
     parts.append("<link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>")
     parts.append("<link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap' rel='stylesheet'>")
@@ -65,7 +65,7 @@ def render_html(
 
     # ---- Header ----
     parts.append("<header class='hero'>")
-    parts.append(f"<div class='brand'>PARE DE ADIVINHAR</div>")
+    parts.append(f"<div class='brand'>RADAR DE DEMANDA</div>")
     parts.append(f"<h1>Dossiê — {e(nicho.title())}</h1>")
     parts.append(f"<p class='subtitle'>{e(brief.get('negocio', '?'))}</p>")
     parts.append("<div class='meta-grid'>")
@@ -86,7 +86,7 @@ def render_html(
     parts.append("<main>")
 
     # ---- Metodologia ----
-    parts.append(_section("🧭 Como o Pare de adivinhar chegou nessas conclusões", _metodologia_html(scout_meta, fontes_ativas, fat_atual, fat_meta)))
+    parts.append(_section("🧭 Como o Radar de Demanda chegou nessas conclusões", _metodologia_html(scout_meta, fontes_ativas, fat_atual, fat_meta)))
 
     if persona_escolhida:
         parts.append("<div class='banner-persona'>")
@@ -303,8 +303,24 @@ def render_html(
         </div>"""
         parts.append(_section("🕵️ Espionagem Meta Ads — Anúncios rodando agora", f"<table class='data-table'><thead><tr><th>#</th><th>Página</th><th>Ângulo</th><th>Hook</th><th>Rodando</th></tr></thead><tbody>{rows}</tbody></table>{gap_card}"))
 
+    # ---- Fontes indisponíveis hoje: links para abrir à mão ----
+    indisponiveis = [v for v in (scout_meta.get("fontes_status") or {}).values() if not v.get("ok")]
+    if indisponiveis:
+        blocos = []
+        for v in indisponiveis:
+            links = "".join(
+                f"<li><a href='{e(l.get('url', ''))}' target='_blank' rel='noopener'>{e(l.get('query', ''))}</a></li>"
+                for l in v.get("links", [])
+            )
+            blocos.append(f"<p><strong>{e(v.get('nome', '?'))}</strong></p><ul>{links}</ul>")
+        parts.append(_section(
+            "🔗 Fontes indisponíveis hoje — abra à mão",
+            "<p class='note'>Estas fontes bloquearam a coleta automática ou não trouxeram resultado nesta rodada. "
+            "O Radar não tenta contornar bloqueio: abra as buscas abaixo no navegador.</p>" + "".join(blocos),
+        ))
+
     # ---- Vocabulário real ----
-    vocab = analyst_out.get("vocabulario_real", [])[:25]
+    vocab =analyst_out.get("vocabulario_real", [])[:25]
     if vocab:
         chips = "".join(f"<span class='chip'>{e(t)}</span>" for t in vocab)
         parts.append(_section("🗣️ Vocabulário real do público", f"<div class='chips'>{chips}</div><p class='note'>Use essas palavras EXATAS em hooks, headlines e anúncios — é o que o público fala.</p>"))
@@ -341,7 +357,7 @@ def render_html(
             <div class='cta-icon'>🪶</div>
             <h3>Hora de criar sua página de vendas</h3>
             <p class='intro-step'>Você já viu as personas, escolheu uma, e tem a oferta certa. Agora é só publicar a página de vendas pra começar a testar.</p>
-            <p>O Pare de adivinhar já escreveu sua landing inteira em <strong>9 seções validadas</strong> (headline · agitação da dor · diagnóstico · mecanismo · prova · fit · anti-fit · CTA · P.S.) com a copy específica pra <em>{persona_label}</em> vendendo <em>{oferta_label}</em> — usando o vocabulário real do público.</p>
+            <p>O Radar de Demanda já escreveu sua landing inteira em <strong>9 seções validadas</strong> (headline · agitação da dor · diagnóstico · mecanismo · prova · fit · anti-fit · CTA · P.S.) com a copy específica pra <em>{persona_label}</em> vendendo <em>{oferta_label}</em> — usando o vocabulário real do público.</p>
             <div class='how-it-works'>
                 <div class='step'><span class='step-num'>1</span> Clique no botão abaixo (copia o prompt completo pro clipboard)</div>
                 <div class='step'><span class='step-num'>2</span> Abra <a href='https://lovable.dev' target='_blank'>lovable.dev</a> em outra aba e cole no campo</div>
@@ -369,7 +385,7 @@ def render_html(
             <p class='intro-step'>Você já viu as personas, escolheu uma, e tem a oferta certa. Falta gerar a página de vendas pra começar a testar.</p>
             <div class='how-it-works'>
                 <div class='step'><span class='step-num'>1</span> Clique no botão (copia o comando)</div>
-                <div class='step'><span class='step-num'>2</span> Cole no terminal do projeto e dê Enter — o Pare de adivinhar escreve as 9 seções (~1min, ~R$3-5)</div>
+                <div class='step'><span class='step-num'>2</span> Cole no terminal do projeto e dê Enter — o Radar de Demanda escreve as 9 seções (~1min, 1 chamada ao Sonnet)</div>
                 <div class='step'><span class='step-num'>3</span> Abra o arquivo <code>_landing.md</code> gerado e copie tudo</div>
                 <div class='step'><span class='step-num'>4</span> Cole em <a href='https://lovable.dev' target='_blank'>lovable.dev</a> — ele monta o visual mantendo a copy</div>
             </div>
@@ -388,7 +404,7 @@ def render_html(
     parts.append("""
     <footer class='footer'>
         <p>📅 <strong>Rode de novo em 14-21 dias.</strong> Mercado BR muda toda semana — quem roda mensal pega oportunidade antes da concorrência saturar.</p>
-        <p>💰 <em>Cada novo dossiê custa ~R$15-20 (pago direto Anthropic). Sem mensalidade.</em></p>
+        <p>💰 <em>O custo de cada dossiê depende do modelo e da coleta: 2 chamadas ao Claude Sonnet e de 1 a 4 ao Haiku (mais 1 ao Sonnet com --landing). Confira o gasto real no painel da Anthropic. Sem mensalidade.</em></p>
         <p>🎯 Próximo passo: <code>/radar-copy &lt;prompt-id&gt;</code> ou <code>/radar-ads &lt;prompt-id&gt;</code></p>
     </footer>
     </main>""")

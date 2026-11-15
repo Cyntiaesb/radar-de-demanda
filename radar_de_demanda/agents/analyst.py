@@ -97,21 +97,63 @@ REGRAS:
 - SOMENTE JSON, nada mais"""
 
 
+MIN_FRASES = 10  # abaixo disso não há dado real suficiente para um dossiê
+
+
+class SinaisInsuficientes(RuntimeError):
+    """Coleta trouxe poucas frases reais: o Radar para antes de chamar modelo pago."""
+
+
+def _texto_do_sinal(sinal: dict) -> str:
+    """Texto real do sinal. Google grava em `sinal`; Reddit, RA, ML e YouTube em `texto`."""
+    return str(sinal.get("texto") or sinal.get("text") or sinal.get("sinal") or "").strip()
+
+
 def _extrai_texto(sinal: dict) -> str:
-    t = sinal.get("texto") or sinal.get("text") or sinal.get("query") or ""
+    t = _texto_do_sinal(sinal)
     f = sinal.get("fonte", "?")
     return f"[{f}] {t[:280]}"
 
 
+def frases_reais(signals: list[dict]) -> list[str]:
+    """Linhas prontas para o prompt, só de sinais com texto real."""
+    return [_extrai_texto(s) for s in signals if _texto_do_sinal(s)]
+
+
+def checa_minimo(textos: list[str], fontes_status: dict | None = None, minimo: int = MIN_FRASES) -> None:
+    """Levanta SinaisInsuficientes se houver menos de `minimo` frases reais."""
+    if len(textos) >= minimo:
+        return
+    status = fontes_status or {}
+    falharam = [v.get("nome", k) for k, v in status.items() if not v.get("ok")]
+    funcionaram = [f"{v.get('nome', k)} ({v.get('n', 0)})" for k, v in status.items() if v.get("ok")]
+    linhas = [
+        f"Só {len(textos)} frase(s) real(is) coletada(s); o mínimo é {minimo}.",
+        "O Radar parou aqui, antes de chamar qualquer modelo pago: dossiê sem dado real seria inventado.",
+    ]
+    if falharam:
+        linhas.append("Fontes indisponíveis hoje: " + ", ".join(falharam) + ".")
+    if funcionaram:
+        linhas.append("Fontes com dado: " + ", ".join(funcionaram) + ".")
+    linhas.append("Tente um nicho com mais busca, acrescente termos no briefing (python scripts/radar_brief.py) "
+                  "ou rode de novo mais tarde.")
+    raise SinaisInsuficientes("\n".join(linhas))
+
+
 def analyst(scout_output: dict, *, model: str = "claude-sonnet-4-6") -> dict:
-    """Analisa sinais e retorna 10 dores ranqueadas com Pain Score."""
+    """Analisa sinais e retorna 10 dores ranqueadas com Pain Score.
+
+    Levanta SinaisInsuficientes (sem chamar o modelo) se houver menos de
+    MIN_FRASES frases reais nos sinais.
+    """
     print("\n🧠 [Analyst] Calculando Pain Score por dor...")
 
     signals = scout_output.get("signals", [])
     trends = scout_output.get("trends", {})
     market = scout_output.get("market", {})
 
-    textos = [_extrai_texto(s) for s in signals[:400] if (s.get("texto") or s.get("text"))]
+    textos = frases_reais(signals)[:400]
+    checa_minimo(textos, scout_output.get("fontes_status"))
     signals_block = "\n".join(textos)
 
     trends_block = "\n".join(

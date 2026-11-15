@@ -6,7 +6,7 @@ público pra scraping automático. Este módulo só gera o link certo pra abrir
 manualmente (logado na própria conta) e buscar o termo lá dentro.
 
 Uso:
-    from cookia.fontes.braip import buscar_infoprodutos
+    from radar_de_demanda.fontes.braip import buscar_infoprodutos
     out = buscar_infoprodutos(["emagrecimento"])
 """
 from __future__ import annotations

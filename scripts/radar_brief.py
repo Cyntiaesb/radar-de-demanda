@@ -226,7 +226,7 @@ def mostra_brief(brief: dict) -> None:
 
 def main():
     print("\n" + "=" * 60)
-    print("📋 PARE DE ADIVINHAR — Brief: 6 perguntas pra te entregar dossiê sob medida")
+    print("📋 RADAR DE DEMANDA — Brief: 6 perguntas pra te entregar dossiê sob medida")
     print("=" * 60)
     print("\nResponda com calma. Quanto mais específico, melhor o dossiê.")
 
@@ -393,8 +393,9 @@ def main():
         print("      mostrar antes de propor ofertas (modo Discovery).")
     else:
         print(f'\n   python scripts/radar_run.py "{nicho}"')
-    print("\n⏱  Vai demorar 7-12 min e custar ~R$15-20 (pago direto Anthropic).")
-    print("   Não é o computador travando — são 7 agentes trabalhando.")
+    print("\n⏱  Pode levar vários minutos. Custo: 2 chamadas ao Claude Sonnet e de 1 a 4 ao Haiku;")
+    print("   confira o gasto real no painel da Anthropic (console.anthropic.com, em Usage).")
+    print("   Não é o computador travando — são os agentes trabalhando.")
     print("\n💡 Dica: rode de novo a cada 14-21 dias pra acompanhar mudanças")
     print("   do mercado. Demanda BR muda rápido — quem roda mensal sai na")
     print("   frente da concorrência.")

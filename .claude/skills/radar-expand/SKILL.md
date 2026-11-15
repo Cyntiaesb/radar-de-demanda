@@ -15,7 +15,7 @@ Ter rodado `python scripts/radar_run.py "<nicho>"` antes (precisa do JSON salvo 
 ```
 python scripts/radar_expand.py mais-ofertas
 ```
-**Custo:** ~R$5
+**Custo:** 1 chamada ao Claude Sonnet
 **Output:** 5 ofertas explorando ângulos não usados antes + dores secundárias + formatos diferentes.
 
 ### 2. Gerar 3 variações de uma oferta específica
@@ -24,7 +24,7 @@ python scripts/radar_expand.py variar 1
 ```
 (troca o `1` pelo ID da oferta que quer variar)
 
-**Custo:** ~R$3
+**Custo:** 1 chamada ao Claude Sonnet
 **Output:** 3 variações mantendo dor + público, mudando ângulo/formato/ticket.
 
 ### 3. Explorar uma dor que não foi atacada
@@ -33,7 +33,7 @@ python scripts/radar_expand.py explorar-dor 4
 ```
 (troca o `4` pelo rank da dor que quer explorar — Bleeding Neck que ficou de fora)
 
-**Custo:** ~R$4
+**Custo:** 1 chamada ao Claude Sonnet
 **Output:** 3 ofertas focadas naquela dor (entrada + core + premium).
 
 ### 4. Mudar ticket das ofertas
@@ -41,7 +41,7 @@ python scripts/radar_expand.py explorar-dor 4
 python scripts/radar_expand.py reprice "R$197"
 ```
 
-**Custo:** ~R$3
+**Custo:** 1 chamada ao Claude Sonnet
 **Output:** 5 ofertas calibradas pro novo ticket (formato/entrega/profundidade ajustados).
 
 ### 5. Mudar formato das ofertas
@@ -50,7 +50,7 @@ python scripts/radar_expand.py formato "mentoria"
 ```
 (ex: `mentoria`, `comunidade`, `template`, `checklist`, `ebook`, `consultoria`)
 
-**Custo:** ~R$3
+**Custo:** 1 chamada ao Claude Sonnet
 **Output:** 5 ofertas no formato escolhido.
 
 ## Output
@@ -60,16 +60,17 @@ O dossiê original NÃO é sobrescrito.
 
 ## Custo total quando usado muito
 
-| Cenário | Chamadas | Custo total |
-|---|---|---|
-| 1 dossiê completo | 1 run | ~R$20 |
-| Dossiê + 3 expansões | 1 run + 3 expand | ~R$30 |
-| Dossiê + 10 expansões (uso pesado) | 1 run + 10 expand | ~R$55 |
+| Cenário | Chamadas ao modelo |
+|---|---|
+| 1 dossiê completo | 2 ao Sonnet + 1 a 4 ao Haiku (+1 Sonnet com `--landing`) |
+| Cada expansão | 1 ao Sonnet |
 
-**É MUITO mais barato explorar variações que rodar dossiê novo.**
+O valor em reais depende do modelo e do tamanho do texto: confira o gasto real no painel da Anthropic (console.anthropic.com, em Usage).
+
+**Expandir custa menos que rodar dossiê novo** (1 chamada contra a rodada inteira).
 
 ## Anti-patterns
 
-- ❌ Rodar `radar_run` várias vezes pra ter mais ofertas — use `expand` (15x mais barato)
+- ❌ Rodar `radar_run` várias vezes pra ter mais ofertas — use `expand` (1 chamada em vez da rodada inteira)
 - ❌ Expandir dossiê velho (>30 dias) sem rodar novo primeiro — sinais defasaram
 - ❌ Pedir formato sem fit com nicho (ex: "comunidade" pra produto físico)

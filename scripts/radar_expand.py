@@ -9,7 +9,7 @@ Usos:
 
 Se [nicho] não for passado, usa o dossiê mais recente.
 
-Cada chamada custa ~R$3-5 (só Sonnet, sem scrapers).
+Cada chamada faz 1 chamada ao Claude Sonnet (sem coleta). Confira o gasto real no painel da Anthropic.
 """
 from __future__ import annotations
 import argparse

@@ -8,7 +8,7 @@ e buscar o termo lá dentro (a vitrine tem busca por nome/categoria/comissão/
 preço uma vez logado).
 
 Uso:
-    from cookia.fontes.monetizze import buscar_infoprodutos
+    from radar_de_demanda.fontes.monetizze import buscar_infoprodutos
     out = buscar_infoprodutos(["emagrecimento"])
 """
 from __future__ import annotations

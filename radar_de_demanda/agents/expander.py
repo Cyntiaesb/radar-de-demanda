@@ -7,7 +7,7 @@
   reprice(ticket): regenera ofertas no ticket alvo
   reformatar(formato): regenera ofertas em formato específico
 
-Cada modo custa ~R$3-5 (só Sonnet). NÃO roda Scout/Analyst/Hunter/etc.
+Cada modo faz 1 chamada ao Claude Sonnet. NÃO roda Scout/Analyst/Hunter/etc.
 """
 from __future__ import annotations
 import json

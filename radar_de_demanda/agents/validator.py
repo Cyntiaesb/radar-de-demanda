@@ -81,7 +81,9 @@ def validator(
     trend_volume_avg = sum(trend_volumes) / len(trend_volumes) if trend_volumes else 0
 
     tendencias = [t.get("tendencia") for t in trends.values()]
-    if tendencias.count("subindo") >= len(tendencias) / 2:
+    if not tendencias:  # Trends indisponível hoje: sem dado, sem bônus de tendência
+        tendencia_dom = "indefinida"
+    elif tendencias.count("subindo") >= len(tendencias) / 2:
         tendencia_dom = "subindo"
     elif tendencias.count("caindo") >= len(tendencias) / 2:
         tendencia_dom = "caindo"

@@ -17,7 +17,7 @@ Tempo total: **~10 minutos** na primeira vez. Depois, cada dossiê leva 30s pra 
 - Acesse: https://console.anthropic.com
 - Crie conta com seu email
 - Vá em **API Keys** → **Create Key** → copie a chave (começa com `sk-ant-...`)
-- Vá em **Billing** → adicione US$5 de crédito (dá pra ~25 dossiês)
+- Vá em **Billing** → adicione crédito (o gasto de cada dossiê aparece em **Usage**)
 
 > ⚠️ **Guarde a chave em local seguro.** Você não vê ela de novo depois de fechar a janela.
 
@@ -68,6 +68,18 @@ A pasta `.claude/skills/` do Radar de Demanda precisa ser visível pro Claude Co
 
 **Abra a pasta RADAR DE DEMANDA dentro do Claude Code Desktop** (File → Open Folder). Pronto — ele lê automaticamente as skills da pasta `.claude/skills/`.
 
+### 5. Responder o briefing (uma vez, no terminal)
+
+Ainda no terminal, dentro da pasta RADAR DE DEMANDA, rode:
+
+```
+python scripts/radar_brief.py
+```
+
+Responda às perguntas sobre o seu negócio e o seu nicho. É isso que define o que o Radar vai pesquisar. As respostas ficam em `data/brief.json`.
+
+Rode no terminal, não no chat do Claude Code: o briefing espera você digitar as respostas. Sem esse passo, o dossiê para com "Brief não encontrado".
+
 ---
 
 ## Primeiro dossiê (toda vez)
@@ -86,12 +98,16 @@ Na caixa de chat, digite:
 
 (Troque "advocacia" pelo seu nicho.)
 
-### 3. Aguardar ~3-5 minutos
+### 3. Aguardar alguns minutos
 
-O Claude vai:
-1. Raspar Google + Reddit + Reclame Aqui (5 min)
-2. Categorizar com Haiku (1 min)
-3. Gerar dossiê em `data/dossies/advocacia_<data>.md`
+O Claude roda `python scripts/radar_run.py "advocacia" --sem-pausa` e:
+1. Coleta sinais no Google, Reddit, Reclame Aqui, Mercado Livre e Google Trends (grátis)
+2. Ranqueia as dores e monta as ofertas com o Claude
+3. Gera o dossiê em `data/dossies/advocacia_<data>.md` (e `.html`, `.csv`, `.json`)
+
+Fonte que bloquear a coleta automática aparece no dossiê como "indisponível hoje", com os links de busca para você abrir à mão. Se a coleta trouxer menos de 10 frases reais, o Radar para antes de gastar com o modelo e diz quais fontes falharam.
+
+Quer também a landing de 9 seções? Peça ao Claude para rodar com `--landing` (1 chamada a mais ao Sonnet).
 
 ### 4. Abrir o dossiê
 
@@ -130,6 +146,12 @@ O Claude pega automaticamente o dossiê mais recente e gera as variações.
 **"Erro 401 ou créditos insuficientes"**
 → Adicione crédito em console.anthropic.com → Billing.
 
+**"Brief não encontrado"**
+→ Faltou o passo 5 da instalação: rode `python scripts/radar_brief.py` no terminal.
+
+**"Só N frase(s) real(is) coletada(s)"**
+→ A coleta trouxe pouco dado e o Radar parou antes de gastar. Tente um nicho com mais busca, acrescente termos no briefing ou rode de novo mais tarde.
+
 **Dossiê veio vazio ou raso**
 → Tente um nicho mais específico ("advocacia trabalhista" em vez de "direito").
 
@@ -137,14 +159,16 @@ O Claude pega automaticamente o dossiê mais recente e gera as variações.
 
 ## Custos por dossiê
 
-| Etapa | Custo |
-|---|---|
-| Coleta (Google + Reddit + RA) | Grátis |
-| Categorização Haiku | ~R$3 |
-| Solution-Market Fit (opcional, Sonnet) | ~R$8 |
-| **Total típico** | **R$3–R$11** |
+O custo depende do modelo e do tamanho da coleta, e é cobrado na sua chave da Anthropic:
 
-US$5 de crédito = ~25 dossiês.
+| Etapa | Chamadas ao modelo |
+|---|---|
+| Briefing (uma vez) | 1 ao Claude Haiku |
+| Coleta | nenhuma (grátis) |
+| Dossiê | 2 ao Claude Sonnet + 1 a 4 ao Claude Haiku |
+| Landing (`--landing`, opcional) | +1 ao Claude Sonnet |
+
+Confira o gasto real no painel da Anthropic (console.anthropic.com, em Usage).
 
 ---
 

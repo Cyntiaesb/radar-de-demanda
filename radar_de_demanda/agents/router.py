@@ -1,6 +1,6 @@
 """🧭 Agente Router — classifica o tipo de negócio e roteia pras fontes certas.
 
-Roda ANTES do Scout. Custa ~R$0,30 (Haiku), economiza muito mais
+Roda ANTES do Scout. 1 chamada ao Claude Haiku, economiza muito mais
 em desperdício de scraping em fontes erradas.
 
 Categorias:

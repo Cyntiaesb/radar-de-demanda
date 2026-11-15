@@ -11,7 +11,7 @@ com taxa de reembolso <15% e chargeback <3% — é praticamente um "top produtos
 validados" pronto.
 
 Uso:
-    from cookia.fontes.kiwify import buscar_infoprodutos
+    from radar_de_demanda.fontes.kiwify import buscar_infoprodutos
     out = buscar_infoprodutos(["emagrecimento"])
 """
 from __future__ import annotations

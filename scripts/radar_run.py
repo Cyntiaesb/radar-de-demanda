@@ -10,6 +10,11 @@ Roda 5 agentes em sequência:
 Uso:
   python scripts/radar_brief.py        # uma vez, define brief
   python scripts/radar_run.py "nicho"  # toda execução
+
+Opções:
+  --sem-pausa   não faz perguntas no meio (obrigatório dentro do Claude Code;
+                ligado sozinho quando o terminal não é interativo)
+  --landing     gera também a landing de 9 seções (1 chamada a mais ao Sonnet)
 """
 from __future__ import annotations
 import argparse
@@ -40,8 +45,29 @@ if not os.environ.get("ANTHROPIC_API_KEY"):
 
 from radar_de_demanda.seeds import SEEDS
 from radar_de_demanda.agents import router, scout, analyst, hunter, info_hunter, spy, strategist, validator
+from radar_de_demanda.agents.analyst import SinaisInsuficientes
 from radar_de_demanda.agents.landing import landing as gerar_landing_agent
 from radar_de_demanda.render_html import render_html
+
+
+CUSTO_TEXTO = (
+    "O custo depende do modelo e do tamanho da coleta. Uma rodada faz 2 chamadas ao Claude Sonnet "
+    "(Analyst e Strategist) e de 1 a 4 ao Claude Haiku (Router sempre; Hunter, InfoHunter e Spy só quando "
+    "a fonte deles traz dado). Com --landing, mais 1 ao Sonnet. Confira o gasto real no painel da Anthropic "
+    "(console.anthropic.com, em Usage)."
+)
+
+
+def deve_pausar(brief: dict, sem_pausa: bool, stdin=None) -> bool:
+    """Só pausa para perguntar se o brief pede (discovery), a pessoa não pediu --sem-pausa
+    e há alguém digitando no terminal (stdin interativo)."""
+    if not brief.get("discovery_mode") or sem_pausa:
+        return False
+    stdin = stdin if stdin is not None else sys.stdin
+    try:
+        return bool(stdin and stdin.isatty())
+    except (AttributeError, ValueError):
+        return False
 
 
 def _intensidade_emoji(intensidade: str) -> str:
@@ -232,16 +258,16 @@ def render_md(nicho: str, brief: dict, routing: dict, analyst_out: dict, hunter_
     salto = brief.get("salto_necessario", "?")
     persona_escolhida = brief.get("persona_escolhida")
 
-    out = [f"# Dossiê Pare de adivinhar — {nicho.title()}"]
-    out.append(f"\n> **Cliente:** {brief.get('negocio', '?')}")
+    out = [f"# Dossiê Radar de Demanda — {nicho.title()}"]
+    out.append(f"\n> **Negócio:** {brief.get('negocio', '?')}")
     out.append(f"> **Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     fontes_ativas = [k for k, v in routing.get("fontes_ativas", {}).items() if v]
     out.append(f"> **🧭 Router classificou como:** {routing.get('categoria', '?')} — _{routing.get('subcategoria', '')}_")
     out.append(f"> **Fontes ativadas:** {', '.join(fontes_ativas)} | **Sinais:** {scout_meta.get('total_signals')}")
     out.append(f"> **💰 Salto financeiro:** {fat_atual} → {fat_meta} _(salto: {salto})_")
 
-    # ---- INTRO: como o Pare de adivinhar chegou nessas conclusões ----
-    out.append("\n## 🧭 Como o Pare de adivinhar chegou nessas conclusões\n")
+    # ---- INTRO: como o Radar de Demanda chegou nessas conclusões ----
+    out.append("\n## 🧭 Como o Radar de Demanda chegou nessas conclusões\n")
     out.append("Esse dossiê não é chute. Cada decisão saiu de um agente especializado cruzando dados reais:")
     out.append(f"")
     out.append(f"1. **Scout** raspou {scout_meta.get('total_signals', '?')} sinais de {len(fontes_ativas)} fontes BR ({', '.join(fontes_ativas)})")
@@ -410,6 +436,16 @@ def render_md(nicho: str, brief: dict, routing: dict, analyst_out: dict, hunter_
         b = of.get("score_breakdown", {})
         out.append(f"- **Score breakdown:** volume {b.get('volume')} | ticket {b.get('ticket')} | saturação {b.get('saturacao')} | tendência {b.get('tendencia')}\n")
 
+    indisponiveis = [v for v in (scout_meta.get("fontes_status") or {}).values() if not v.get("ok")]
+    if indisponiveis:
+        out.append("\n## 🔗 Fontes indisponíveis hoje — abra à mão\n")
+        out.append("Estas fontes bloquearam a coleta automática ou não trouxeram resultado nesta rodada. "
+                   "O Radar não tenta contornar bloqueio: abra as buscas abaixo no navegador.\n")
+        for v in indisponiveis:
+            out.append(f"_{v.get('nome', '?')}:_")
+            for l in v.get("links", []):
+                out.append(f"- [{l.get('query')}]({l.get('url')})")
+            out.append("")
     out.append("\n## 🗣️ Vocabulário real do público\n")
     out.append(", ".join(f"`{t}`" for t in analyst_out.get("vocabulario_real", [])[:25]))
 
@@ -421,10 +457,10 @@ def render_md(nicho: str, brief: dict, routing: dict, analyst_out: dict, hunter_
     out.append("- Vê quais ofertas Spy ainda rodam (sinal de profitabilidade contínua)")
     out.append("- Atualiza vocabulário do público (palavras mudam rápido)")
     out.append("- Histórico versionado mostra **o que mudou desde o último run**\n")
-    out.append(f"\n💰 _Cada novo dossiê custa ~R$15-20 (pago direto Anthropic). Sem mensalidade._")
+    out.append(f"\n💰 _{CUSTO_TEXTO} Sem mensalidade._")
     out.append(f"\n\n🎯 _Próximo passo prático: `/radar-copy <prompt-id>` ou `/radar-ads <prompt-id>` pra gerar copy/anúncio direto do dossiê._")
 
-    out.append(f"\n\n## 🔄 Quer MAIS opções? Use os comandos de expansão (~R$3-5 cada)\n")
+    out.append(f"\n\n## 🔄 Quer MAIS opções? Use os comandos de expansão (1 chamada ao Sonnet cada)\n")
     out.append("Sem precisar rodar dossiê novo:")
     out.append("- `python scripts/radar_expand.py mais-ofertas` → 5 ofertas novas com ângulos diferentes")
     out.append("- `python scripts/radar_expand.py variar 1` → 3 variações da oferta #1")
@@ -453,7 +489,7 @@ def render_csv(validator_out: dict) -> str:
     return "\n".join(linhas)
 
 
-def main():
+def main(argv: list[str] | None = None):
     p = argparse.ArgumentParser()
     p.add_argument("nicho", help="nicho a pesquisar (ex: 'produtividade', 'fitness feminino')")
     p.add_argument("--max-reddit", type=int, default=200)
@@ -462,7 +498,11 @@ def main():
     p.add_argument("--no-trends", action="store_true", help="pular Google Trends (debug)")
     p.add_argument("--youtube-videos", type=str, default="",
                     help="URLs de vídeo (separadas por vírgula) pra coletar comentários como sinal extra")
-    args = p.parse_args()
+    p.add_argument("--sem-pausa", action="store_true",
+                   help="não faz perguntas no meio da rodada (use dentro do Claude Code)")
+    p.add_argument("--landing", action="store_true",
+                   help="gera também a landing de 9 seções (1 chamada a mais ao Sonnet)")
+    args = p.parse_args(argv)
 
     brief = carrega_brief()
     nicho = args.nicho
@@ -475,15 +515,14 @@ def main():
 
     base = out_dir / f"{nicho_slug}_{ts}"
     print(f"\n{'=' * 60}")
-    print(f"🚀 PARE DE ADIVINHAR — Agent Swarm — {nicho}")
+    print(f"🚀 RADAR DE DEMANDA — Agent Swarm — {nicho}")
     print(f"{'=' * 60}")
     print(f"📋 Brief: {brief.get('negocio', '?')}")
     print(f"📂 Output: {base}")
     print(f"\n{'─' * 60}")
-    print("⏱  TEMPO: este dossiê demora 7-12 minutos — não é seu computador")
-    print("    travando. São 7 agentes especializados raspando milhares de")
-    print("    sinais reais e cruzando dados pra te entregar ofertas validadas.")
-    print(f"\n💰 CUSTO: ~R$15-20 deste run (Anthropic cobra direto no seu cartão)")
+    print("⏱  TEMPO: este dossiê pode levar vários minutos — não é seu computador")
+    print("    travando. Os agentes coletam sinais e cruzam os dados.")
+    print(f"\n💰 CUSTO: {CUSTO_TEXTO}")
     print(f"\n🔄 FREQUÊNCIA RECOMENDADA: rode novamente a cada 14-21 dias.")
     print("    O mercado BR muda toda semana — produto que tava 🟡 hoje pode")
     print("    virar 🟢 mês que vem (e vice-versa).")
@@ -506,15 +545,18 @@ def main():
     (base.with_name(f"{nicho_slug}_{ts}_raw.json")).write_text(
         json.dumps(scout_out, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
-    if not scout_out.get("signals"):
-        print("\n❌ Scout não trouxe sinais. Abortando.")
+    try:
+        analyst_out = analyst(scout_out)
+    except SinaisInsuficientes as e:
+        print(f"\n❌ {e}")
         sys.exit(2)
-
-    analyst_out = analyst(scout_out)
 
     focused_ranks = None
     focused_persona = None
-    if brief.get("discovery_mode"):
+    pausar = deve_pausar(brief, args.sem_pausa)
+    if brief.get("discovery_mode") and not pausar:
+        print("\n⏭  Sem pausa (--sem-pausa ou terminal não interativo): seguindo com todas as personas e dores.")
+    if pausar:
         focused_persona, focused_ranks = discovery_pause(analyst_out)
         if focused_persona:
             # Injeta dados da persona no brief antes do Hunter/Spy/Strategist
@@ -531,13 +573,15 @@ def main():
                                 focused_persona=focused_persona)
     validator_out = validator(strategist_out, analyst_out, hunter_out, scout_out.get("trends", {}))
 
-    # Gera landing de 9 seções automaticamente (~R$3-5)
-    landing_out = gerar_landing_agent({
-        "analyst": analyst_out,
-        "validator": validator_out,
-        "strategist": strategist_out,
-        "brief": brief,
-    })
+    # Landing de 9 seções: só com --landing (1 chamada a mais ao Sonnet)
+    landing_out: dict = {}
+    if args.landing:
+        landing_out = gerar_landing_agent({
+            "analyst": analyst_out,
+            "validator": validator_out,
+            "strategist": strategist_out,
+            "brief": brief,
+        })
 
     dossie = {
         "nicho": nicho,
@@ -554,6 +598,7 @@ def main():
             "total_signals": len(scout_out.get("signals", [])),
             "trends": scout_out.get("trends", {}),
             "market": scout_out.get("market", {}),
+            "fontes_status": scout_out.get("fontes_status", {}),
         },
         "gerado_em": datetime.now().isoformat(),
     }
@@ -567,7 +612,8 @@ def main():
     json_path.write_text(json.dumps(dossie, ensure_ascii=False, indent=2), encoding="utf-8")
     md_path.write_text(render_md(nicho, brief, routing, analyst_out, hunter_out, info_hunter_out, spy_out, strategist_out, validator_out, dossie["scout_meta"]), encoding="utf-8")
     csv_path.write_text(render_csv(validator_out), encoding="utf-8")
-    landing_path.write_text(landing_out.get("markdown", ""), encoding="utf-8")
+    if landing_out.get("markdown"):
+        landing_path.write_text(landing_out["markdown"], encoding="utf-8")
     html_path = base.with_suffix(".html")
     html_path.write_text(render_html(nicho, brief, routing, analyst_out, hunter_out, info_hunter_out, spy_out, strategist_out, validator_out, dossie["scout_meta"], landing_out=landing_out), encoding="utf-8")
     hist_path.write_text(json.dumps(dossie, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -576,7 +622,8 @@ def main():
     print(f"✅ Dossiê Agentic gerado:")
     print(f"   📄 {md_path.name}    (humano — abra no Claude Code)")
     print(f"   🎨 {html_path.name}  (dashboard — abra no navegador)")
-    print(f"   🪶 {landing_path.name}  (landing 9 seções — cole no Lovable)")
+    if landing_out.get("markdown"):
+        print(f"   🪶 {landing_path.name}  (landing 9 seções — cole no Lovable)")
     print(f"   📊 {csv_path.name}   (planilha — abra no Excel)")
     print(f"   🤖 {json_path.name}  (consumido por /radar-copy e /radar-ads)")
     print(f"   📚 historico/{nicho_slug}/{ts}.json")

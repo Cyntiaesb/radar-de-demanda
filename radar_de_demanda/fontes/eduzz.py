@@ -6,7 +6,7 @@ pra scraping automático. Este módulo só gera o link de login certo pra abrir
 manualmente e buscar o termo lá dentro.
 
 Uso:
-    from cookia.fontes.eduzz import buscar_infoprodutos
+    from radar_de_demanda.fontes.eduzz import buscar_infoprodutos
     out = buscar_infoprodutos(["emagrecimento"])
 """
 from __future__ import annotations

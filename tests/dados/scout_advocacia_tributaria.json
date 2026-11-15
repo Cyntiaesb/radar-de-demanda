@@ -1,0 +1,174 @@
+{
+  "_nota": "Coleta real gravada em 15/11/2026 (Google Autocomplete funcionou; as outras fontes deram 403/429).",
+  "signals": [
+    {
+      "sinal": "advocacia tributária na prática",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária curso",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária salário",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária curitiba",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária fortaleza",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária goiania",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária na prática josiane minardi",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária porto alegre",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária sorocaba",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária são paulo",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária livro",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária londrina",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária alexandre mazza",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária. campinas",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária vale a pena",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:advocacia tributária"
+    },
+    {
+      "sinal": "como iniciar na advocacia tributária",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    },
+    {
+      "sinal": "como captar clientes advocacia tributária",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    },
+    {
+      "sinal": "como funciona a advocacia tributária",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    },
+    {
+      "sinal": "como advogar no direito tributário",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    },
+    {
+      "sinal": "como advogar na area tributária",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária o que é",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    },
+    {
+      "sinal": "advocacia tributária o que faz",
+      "seed": "advocacia tributária",
+      "fonte": "autocomplete:como advocacia tributária"
+    }
+  ],
+  "trends": {},
+  "market": {},
+  "fontes_status": {
+    "google_autocomplete": {
+      "nome": "Google Autocomplete",
+      "ok": true,
+      "n": 22,
+      "erro": null,
+      "links": []
+    },
+    "reddit": {
+      "nome": "Reddit",
+      "ok": false,
+      "n": 0,
+      "erro": null,
+      "links": [
+        {
+          "query": "advocacia tributária",
+          "url": "https://www.reddit.com/search/?q=advocacia+tribut%C3%A1ria"
+        }
+      ]
+    },
+    "reclame_aqui": {
+      "nome": "Reclame Aqui",
+      "ok": false,
+      "n": 0,
+      "erro": null,
+      "links": [
+        {
+          "query": "advocacia tributária",
+          "url": "https://www.reclameaqui.com.br/busca/?q=advocacia+tribut%C3%A1ria"
+        }
+      ]
+    },
+    "mercado_livre": {
+      "nome": "Mercado Livre",
+      "ok": false,
+      "n": 0,
+      "erro": null,
+      "links": [
+        {
+          "query": "advocacia tributária",
+          "url": "https://lista.mercadolivre.com.br/advocacia-tribut%C3%A1ria"
+        }
+      ]
+    },
+    "google_trends": {
+      "nome": "Google Trends",
+      "ok": false,
+      "n": 0,
+      "erro": null,
+      "links": [
+        {
+          "query": "advocacia tributária",
+          "url": "https://trends.google.com.br/trends/explore?geo=BR&q=advocacia+tribut%C3%A1ria"
+        }
+      ]
+    }
+  }
+}

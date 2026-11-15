@@ -1,12 +1,16 @@
-"""🕵️ Agente Scout — coleta sinais de até 5 fontes (controlado pelo Router).
+"""🕵️ Agente Scout — coleta sinais de até 6 fontes (controlado pelo Router).
 
 Aceita `routing_config` do Router pra:
   - Ativar/desativar fontes (ex: pular Mercado Livre pra serviço B2B)
   - Usar subreddits específicos por categoria
   - Buscar com queries comerciais reescritas
+
+Fonte que falha ou volta vazia (bloqueio anti-robô, login, limite de pedidos)
+é registrada como "indisponível hoje" em `fontes_status`, com links de busca
+para a pessoa abrir à mão. O Radar não tenta contornar bloqueio.
 """
 from __future__ import annotations
-from typing import Iterable
+from typing import Callable, Iterable
 
 from ..fontes.google_autocomplete import scrape_google_signals
 from ..fontes.reddit_br import scrape_reddit
@@ -14,6 +18,33 @@ from ..fontes.reclame_aqui import scrape_reclame_aqui
 from ..fontes.google_trends import volume_e_tendencia
 from ..fontes.mercado_livre import buscar_produtos, estatisticas_categoria
 from ..fontes.youtube_comments import scrape_youtube_comments
+from ..fontes.links_manuais import NOMES, links_busca
+
+
+def _registra(status: dict, fonte: str, n: int, queries: list[str], erro: str | None = None) -> None:
+    ok = n > 0
+    status[fonte] = {
+        "nome": NOMES.get(fonte, fonte),
+        "ok": ok,
+        "n": n,
+        "erro": erro,
+        "links": [] if ok else links_busca(fonte, queries),
+    }
+    if ok:
+        print(f"    ✓ {n} sinais")
+    else:
+        motivo = f" ({erro})" if erro else ""
+        print(f"    ⚠ fonte indisponível hoje{motivo} — o dossiê traz links para abrir à mão")
+
+
+def _coleta(status: dict, fonte: str, queries: list[str], fn: Callable[[], list]) -> list:
+    try:
+        r = fn() or []
+        _registra(status, fonte, len(r), queries)
+        return r
+    except Exception as e:  # falha numa fonte não derruba o pipeline
+        _registra(status, fonte, 0, queries, erro=f"{type(e).__name__}: {e}"[:160])
+        return []
 
 
 def scout(
@@ -29,9 +60,9 @@ def scout(
 ) -> dict:
     """Roda as fontes ativadas pelo Router. Falha numa fonte não derruba pipeline.
 
-    Args:
-        seeds: queries seed (já podem vir reescritas pelo Router)
-        routing_config: opcional, do Router. Se None, ativa tudo.
+    Returns:
+        {"signals": [...], "trends": {...}, "market": {...},
+         "fontes_status": {fonte: {"nome", "ok", "n", "erro", "links"}}}
     """
     cfg = routing_config or {}
     fontes_ativas = cfg.get("fontes_ativas", {})
@@ -41,79 +72,72 @@ def scout(
     seeds_list = list(seeds)
     todas_queries = list(dict.fromkeys((queries_comerciais or []) + seeds_list))
     signals: list[dict] = []
+    status: dict = {}
 
     if fontes_ativas.get("google_autocomplete", True):
         print("\n🕵️  [Scout/1] Google Autocomplete BR...")
-        try:
-            g = scrape_google_signals(todas_queries[:20], depth=1, delay=0.25)
-            signals.extend(g[:max_google])
-            print(f"    ✓ {len(g)} sinais")
-        except Exception as e:
-            print(f"    ⚠ falhou: {e}")
+        g = _coleta(status, "google_autocomplete", todas_queries,
+                    lambda: scrape_google_signals(todas_queries[:20], depth=1, delay=0.25))
+        signals.extend(g[:max_google])
 
     if fontes_ativas.get("reddit", True):
         print("\n🕵️  [Scout/2] Reddit BR...")
-        try:
-            kwargs = {"posts_per_query": 10, "comments_per_post": 2, "delay": 1.0}
-            if subreddits_cfg:
-                kwargs["subreddits"] = subreddits_cfg
-            r = scrape_reddit(todas_queries[:10], **kwargs)
-            signals.extend(r[:max_reddit])
-            print(f"    ✓ {len(r)} sinais (subs: {len(subreddits_cfg) if subreddits_cfg else 'default'})")
-        except Exception as e:
-            print(f"    ⚠ falhou: {e}")
+        kwargs = {"posts_per_query": 10, "comments_per_post": 2, "delay": 1.0}
+        if subreddits_cfg:
+            kwargs["subreddits"] = subreddits_cfg
+        r = _coleta(status, "reddit", todas_queries, lambda: scrape_reddit(todas_queries[:10], **kwargs))
+        signals.extend(r[:max_reddit])
 
     if fontes_ativas.get("reclame_aqui", True):
         print("\n🕵️  [Scout/3] Reclame Aqui BR...")
-        try:
-            ra = scrape_reclame_aqui(todas_queries[:8], max_per_query=15, delay=1.2)
-            signals.extend(ra[:max_ra])
-            print(f"    ✓ {len(ra)} reclamações")
-        except Exception as e:
-            print(f"    ⚠ falhou: {e}")
+        ra = _coleta(status, "reclame_aqui", todas_queries,
+                     lambda: scrape_reclame_aqui(todas_queries[:8], max_per_query=15, delay=1.2))
+        signals.extend(ra[:max_ra])
 
-    market_stats = {}
+    market_stats: dict = {}
     if fontes_ativas.get("mercado_livre", True):
         print("\n🕵️  [Scout/4] Mercado Livre BR (demanda efetiva)...")
-        try:
-            ml = buscar_produtos(todas_queries[:6], limit=20, delay=0.4)
-            signals.extend(ml[:max_ml])
-            print(f"    ✓ {len(ml)} produtos")
-            market_stats = estatisticas_categoria(todas_queries[:3])
-            print(f"    ✓ saturação: {market_stats.get('saturacao')}, preço médio: R${market_stats.get('preco_medio')}")
-        except Exception as e:
-            print(f"    ⚠ falhou: {e}")
+        ml = _coleta(status, "mercado_livre", todas_queries,
+                     lambda: buscar_produtos(todas_queries[:6], limit=20, delay=0.4))
+        signals.extend(ml[:max_ml])
+        if ml:
+            try:
+                market_stats = estatisticas_categoria(todas_queries[:3])
+                print(f"    ✓ saturação: {market_stats.get('saturacao')}, preço médio: R${market_stats.get('preco_medio')}")
+            except Exception as e:
+                print(f"    ⚠ estatísticas do Mercado Livre indisponíveis hoje: {e}")
     else:
         print("\n🕵️  [Scout/4] Mercado Livre BR — PULADO (Router: tipo de negócio não usa marketplace)")
 
     if fontes_ativas.get("youtube_comments", True) and (youtube_videos or fontes_ativas.get("youtube_search", False)):
         print("\n🕵️  [Scout/6] YouTube Comments...")
-        try:
-            yt = scrape_youtube_comments(
-                todas_queries[:5] if fontes_ativas.get("youtube_search", False) else (),
-                videos=youtube_videos,
-                max_videos_per_query=3,
-                max_comments_per_video=50,
-            )
-            signals.extend(yt[:max_yt])
-            print(f"    ✓ {len(yt)} comentários")
-        except Exception as e:
-            print(f"    ⚠ falhou: {e}")
+        yt = _coleta(status, "youtube_comments", todas_queries, lambda: scrape_youtube_comments(
+            todas_queries[:5] if fontes_ativas.get("youtube_search", False) else (),
+            videos=youtube_videos,
+            max_videos_per_query=3,
+            max_comments_per_video=50,
+        ))
+        signals.extend(yt[:max_yt])
 
     trends_map: dict = {}
     if fontes_ativas.get("google_trends", True):
         print("\n🕵️  [Scout/5] Google Trends BR (volume + tendência)...")
         try:
             tr = volume_e_tendencia(seeds_list[:6], delay=1.5)
-            trends_map = {t["termo"]: t for t in tr}
-            subindo = sum(1 for t in tr if t.get("tendencia") == "subindo")
-            print(f"    ✓ {len(tr)} termos ({subindo} subindo)")
         except Exception as e:
-            print(f"    ⚠ falhou: {e}")
+            tr = []
+            erro = f"{type(e).__name__}: {e}"[:160]
+        else:
+            erro = None
+        validos = [t for t in tr if t.get("tendencia") not in (None, "indisponivel")]
+        trends_map = {t["termo"]: t for t in validos}
+        _registra(status, "google_trends", len(validos), seeds_list, erro=erro)
 
-    print(f"\n🕵️  Scout terminou: {len(signals)} sinais de {sum(1 for v in fontes_ativas.values() if v)} fontes ativas")
+    ok = [v["nome"] for v in status.values() if v["ok"]]
+    print(f"\n🕵️  Scout terminou: {len(signals)} sinais; fontes com dado hoje: {', '.join(ok) or 'nenhuma'}")
     return {
         "signals": signals,
         "trends": trends_map,
         "market": market_stats,
+        "fontes_status": status,
     }
