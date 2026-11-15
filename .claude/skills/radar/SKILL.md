@@ -49,11 +49,14 @@ O custo depende do modelo e do tamanho da coleta. Uma rodada faz 2 chamadas ao C
 (Analyst e Strategist) e de 1 a 4 ao Claude Haiku (Router sempre; Hunter, InfoHunter e Spy só quando
 a fonte deles traz dado). Com `--landing`, mais 1 ao Sonnet. O briefing faz 1 chamada ao Haiku.
 Confira o gasto real no painel da Anthropic (console.anthropic.com, em Usage).
+Com `APIFY_TOKEN` no `.env`, Reddit, Reclame Aqui, Mercado Livre, Google Trends e anúncios da Meta vêm
+pelo Apify, cobrado à parte com teto por rodada (`APIFY_TETO_USD`, padrão US$ 1,00). Ao terminar, diga
+à pessoa quanto o Apify gastou (está no fim da saída e no dossiê).
 
 ## Setup da pessoa (primeira vez)
 
 1. Instalar dependências: `pip install -r requirements.txt`
-2. Colocar `ANTHROPIC_API_KEY` no `.env`
+2. Colocar `ANTHROPIC_API_KEY` no `.env` (opcional: `APIFY_TOKEN` para as 5 fontes que bloqueiam coleta direta)
 3. Rodar o briefing no terminal: `python scripts/radar_brief.py`
 4. Pedir no Claude Code: `/radar seu primeiro nicho`
 
@@ -62,4 +65,4 @@ Confira o gasto real no painel da Anthropic (console.anthropic.com, em Usage).
 - Não rodar pro mesmo nicho < 30d (sinais mudam pouco)
 - Não usar % inventado nos hooks (Radar de Demanda gera linguagem de processo, não promessa numérica)
 - Não comparar concorrentes nominalmente em copy pra setores regulados (OAB, CFM, CFN)
-- Não tentar contornar bloqueio de site: fonte bloqueada entra como link para abrir à mão
+- Não tentar contornar bloqueio de site por conta própria: sem `APIFY_TOKEN`, fonte bloqueada entra como link para abrir à mão

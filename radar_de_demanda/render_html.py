@@ -303,6 +303,15 @@ def render_html(
         </div>"""
         parts.append(_section("🕵️ Espionagem Meta Ads — Anúncios rodando agora", f"<table class='data-table'><thead><tr><th>#</th><th>Página</th><th>Ângulo</th><th>Hook</th><th>Rodando</th></tr></thead><tbody>{rows}</tbody></table>{gap_card}"))
 
+    # ---- Gasto do Apify (quando usado) ----
+    gasto = scout_meta.get("apify")
+    if gasto:
+        linhas = "".join(f"<li>{e(k)}: US$ {v:.4f}</li>" for k, v in (gasto.get("por_fonte") or {}).items())
+        parts.append(_section(
+            "💵 Custo do Apify nesta rodada",
+            f"<p>Total: <strong>US$ {gasto['total_usd']:.4f}</strong> (teto US$ {gasto['teto_usd']:.2f})</p><ul>{linhas}</ul>",
+        ))
+
     # ---- Fontes indisponíveis hoje: links para abrir à mão ----
     indisponiveis = [v for v in (scout_meta.get("fontes_status") or {}).values() if not v.get("ok")]
     if indisponiveis:

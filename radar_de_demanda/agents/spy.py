@@ -16,7 +16,8 @@ import os
 
 from anthropic import Anthropic
 
-from ..fontes.meta_ads_library import espiona_nicho
+from ..fontes.meta_ads_library import build_search_url, espiona_nicho
+from ..fontes import apify_fontes as apify
 
 PROMPT_SPY = """Você é Spy do Radar de Demanda — analista de anúncios pagos da Meta Ads Library BR.
 
@@ -108,7 +109,20 @@ def spy(
     if vocabulario:
         keywords.extend([v for v in vocabulario[:3] if len(v) > 3 and len(v) < 50])
 
-    raw = espiona_nicho(keywords, max_total=30, delay=1.0)
+    raw = None
+    if apify.token():
+        try:
+            ads = apify.meta_anuncios(keywords)
+            raw = {
+                "anuncios_extraidos": ads,
+                "urls_busca": [{"keyword": k, "url": build_search_url(k)} for k in keywords],
+                "scraping_funcionou": bool(ads),
+            }
+            print(f"    💵 Apify (Meta): US$ {apify.GASTOS.get('meta_ads', 0)}")
+        except Exception as e:  # cai no caminho direto + links
+            print(f"    ⚠ Apify (Meta) falhou: {type(e).__name__}: {str(e)[:120]}")
+    if raw is None:
+        raw = espiona_nicho(keywords, max_total=30, delay=1.0)
 
     resultado = {
         "scraping_funcionou": raw["scraping_funcionou"],

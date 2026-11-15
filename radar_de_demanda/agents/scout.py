@@ -5,9 +5,11 @@ Aceita `routing_config` do Router pra:
   - Usar subreddits específicos por categoria
   - Buscar com queries comerciais reescritas
 
-Fonte que falha ou volta vazia (bloqueio anti-robô, login, limite de pedidos)
-é registrada como "indisponível hoje" em `fontes_status`, com links de busca
-para a pessoa abrir à mão. O Radar não tenta contornar bloqueio.
+Reddit, Reclame Aqui, Mercado Livre e Google Trends bloqueiam coleta direta.
+Com APIFY_TOKEN no `.env`, essas quatro vêm por coletores do Apify (com teto
+de gasto, ver fontes/apify_fontes.py). Sem token, o Radar tenta direto e, se
+a fonte falha ou volta vazia, registra "indisponível hoje" em `fontes_status`
+com links de busca para a pessoa abrir à mão.
 """
 from __future__ import annotations
 from typing import Callable, Iterable
@@ -19,31 +21,37 @@ from ..fontes.google_trends import volume_e_tendencia
 from ..fontes.mercado_livre import buscar_produtos, estatisticas_categoria
 from ..fontes.youtube_comments import scrape_youtube_comments
 from ..fontes.links_manuais import NOMES, links_busca
+from ..fontes import apify_fontes as apify
 
 
-def _registra(status: dict, fonte: str, n: int, queries: list[str], erro: str | None = None) -> None:
+def _registra(status: dict, fonte: str, n: int, queries: list[str], erro: str | None = None,
+              via: str = "direto") -> None:
     ok = n > 0
     status[fonte] = {
         "nome": NOMES.get(fonte, fonte),
         "ok": ok,
         "n": n,
         "erro": erro,
+        "via": via,
+        "custo_usd": apify.GASTOS.get(fonte) if via == "apify" else None,
         "links": [] if ok else links_busca(fonte, queries),
     }
     if ok:
-        print(f"    ✓ {n} sinais")
+        extra = f" (Apify, US$ {status[fonte]['custo_usd']})" if via == "apify" else ""
+        print(f"    ✓ {n} sinais{extra}")
     else:
         motivo = f" ({erro})" if erro else ""
         print(f"    ⚠ fonte indisponível hoje{motivo} — o dossiê traz links para abrir à mão")
 
 
-def _coleta(status: dict, fonte: str, queries: list[str], fn: Callable[[], list]) -> list:
+def _coleta(status: dict, fonte: str, queries: list[str], fn: Callable[[], list],
+            via: str = "direto") -> list:
     try:
         r = fn() or []
-        _registra(status, fonte, len(r), queries)
+        _registra(status, fonte, len(r), queries, via=via)
         return r
     except Exception as e:  # falha numa fonte não derruba o pipeline
-        _registra(status, fonte, 0, queries, erro=f"{type(e).__name__}: {e}"[:160])
+        _registra(status, fonte, 0, queries, erro=f"{type(e).__name__}: {e}"[:160], via=via)
         return []
 
 
@@ -73,6 +81,11 @@ def scout(
     todas_queries = list(dict.fromkeys((queries_comerciais or []) + seeds_list))
     signals: list[dict] = []
     status: dict = {}
+    usa_apify = apify.token() is not None
+    apify.GASTOS.clear()
+    if usa_apify:
+        print(f"\n🕵️  Token do Apify encontrado: Reddit, Reclame Aqui, Mercado Livre e Trends vêm pelo Apify "
+              f"(teto da rodada: US$ {apify.teto_rodada():.2f})")
 
     if fontes_ativas.get("google_autocomplete", True):
         print("\n🕵️  [Scout/1] Google Autocomplete BR...")
@@ -82,25 +95,39 @@ def scout(
 
     if fontes_ativas.get("reddit", True):
         print("\n🕵️  [Scout/2] Reddit BR...")
-        kwargs = {"posts_per_query": 10, "comments_per_post": 2, "delay": 1.0}
-        if subreddits_cfg:
-            kwargs["subreddits"] = subreddits_cfg
-        r = _coleta(status, "reddit", todas_queries, lambda: scrape_reddit(todas_queries[:10], **kwargs))
+        if usa_apify:
+            r = _coleta(status, "reddit", todas_queries, lambda: apify.reddit(todas_queries), via="apify")
+        else:
+            kwargs = {"posts_per_query": 10, "comments_per_post": 2, "delay": 1.0}
+            if subreddits_cfg:
+                kwargs["subreddits"] = subreddits_cfg
+            r = _coleta(status, "reddit", todas_queries, lambda: scrape_reddit(todas_queries[:10], **kwargs))
         signals.extend(r[:max_reddit])
 
     if fontes_ativas.get("reclame_aqui", True):
         print("\n🕵️  [Scout/3] Reclame Aqui BR...")
-        ra = _coleta(status, "reclame_aqui", todas_queries,
-                     lambda: scrape_reclame_aqui(todas_queries[:8], max_per_query=15, delay=1.2))
+        if usa_apify:
+            ra = _coleta(status, "reclame_aqui", todas_queries, lambda: apify.reclame_aqui(todas_queries),
+                         via="apify")
+        else:
+            ra = _coleta(status, "reclame_aqui", todas_queries,
+                         lambda: scrape_reclame_aqui(todas_queries[:8], max_per_query=15, delay=1.2))
         signals.extend(ra[:max_ra])
 
     market_stats: dict = {}
     if fontes_ativas.get("mercado_livre", True):
         print("\n🕵️  [Scout/4] Mercado Livre BR (demanda efetiva)...")
-        ml = _coleta(status, "mercado_livre", todas_queries,
-                     lambda: buscar_produtos(todas_queries[:6], limit=20, delay=0.4))
+        if usa_apify:
+            ml = _coleta(status, "mercado_livre", todas_queries, lambda: apify.mercado_livre(todas_queries),
+                         via="apify")
+        else:
+            ml = _coleta(status, "mercado_livre", todas_queries,
+                         lambda: buscar_produtos(todas_queries[:6], limit=20, delay=0.4))
         signals.extend(ml[:max_ml])
-        if ml:
+        if ml and usa_apify:
+            market_stats = apify.estatisticas_ml(ml)
+            print(f"    ✓ saturação: {market_stats.get('saturacao')}, preço médio: R${market_stats.get('preco_medio')}")
+        elif ml:
             try:
                 market_stats = estatisticas_categoria(todas_queries[:3])
                 print(f"    ✓ saturação: {market_stats.get('saturacao')}, preço médio: R${market_stats.get('preco_medio')}")
@@ -123,7 +150,7 @@ def scout(
     if fontes_ativas.get("google_trends", True):
         print("\n🕵️  [Scout/5] Google Trends BR (volume + tendência)...")
         try:
-            tr = volume_e_tendencia(seeds_list[:6], delay=1.5)
+            tr = apify.google_trends(seeds_list) if usa_apify else volume_e_tendencia(seeds_list[:6], delay=1.5)
         except Exception as e:
             tr = []
             erro = f"{type(e).__name__}: {e}"[:160]
@@ -131,13 +158,18 @@ def scout(
             erro = None
         validos = [t for t in tr if t.get("tendencia") not in (None, "indisponivel")]
         trends_map = {t["termo"]: t for t in validos}
-        _registra(status, "google_trends", len(validos), seeds_list, erro=erro)
+        _registra(status, "google_trends", len(validos), seeds_list, erro=erro,
+                  via="apify" if usa_apify else "direto")
 
     ok = [v["nome"] for v in status.values() if v["ok"]]
     print(f"\n🕵️  Scout terminou: {len(signals)} sinais; fontes com dado hoje: {', '.join(ok) or 'nenhuma'}")
+    gasto = apify.resumo_gastos() if usa_apify else None
+    if gasto:
+        print(f"    💵 Apify nesta rodada: US$ {gasto['total_usd']:.4f} (teto US$ {gasto['teto_usd']:.2f})")
     return {
         "signals": signals,
         "trends": trends_map,
         "market": market_stats,
         "fontes_status": status,
+        "apify": gasto,
     }

@@ -48,13 +48,15 @@ from radar_de_demanda.agents import router, scout, analyst, hunter, info_hunter,
 from radar_de_demanda.agents.analyst import SinaisInsuficientes
 from radar_de_demanda.agents.landing import landing as gerar_landing_agent
 from radar_de_demanda.render_html import render_html
+from radar_de_demanda.fontes import apify_fontes
 
 
 CUSTO_TEXTO = (
     "O custo depende do modelo e do tamanho da coleta. Uma rodada faz 2 chamadas ao Claude Sonnet "
     "(Analyst e Strategist) e de 1 a 4 ao Claude Haiku (Router sempre; Hunter, InfoHunter e Spy só quando "
     "a fonte deles traz dado). Com --landing, mais 1 ao Sonnet. Confira o gasto real no painel da Anthropic "
-    "(console.anthropic.com, em Usage)."
+    "(console.anthropic.com, em Usage). Com APIFY_TOKEN no .env, o Apify cobra à parte, com teto por rodada "
+    "(APIFY_TETO_USD, padrão US$ 1,00); o gasto real do Apify sai no fim da rodada e no dossiê."
 )
 
 
@@ -436,6 +438,12 @@ def render_md(nicho: str, brief: dict, routing: dict, analyst_out: dict, hunter_
         b = of.get("score_breakdown", {})
         out.append(f"- **Score breakdown:** volume {b.get('volume')} | ticket {b.get('ticket')} | saturação {b.get('saturacao')} | tendência {b.get('tendencia')}\n")
 
+    gasto = scout_meta.get("apify")
+    if gasto:
+        partes = ", ".join(f"{k}: US$ {v:.4f}" for k, v in gasto.get("por_fonte", {}).items())
+        out.append(f"\n_Apify nesta rodada: US$ {gasto['total_usd']:.4f} (teto US$ {gasto['teto_usd']:.2f})"
+                   f"{' — ' + partes if partes else ''}._\n")
+
     indisponiveis = [v for v in (scout_meta.get("fontes_status") or {}).values() if not v.get("ok")]
     if indisponiveis:
         out.append("\n## 🔗 Fontes indisponíveis hoje — abra à mão\n")
@@ -599,6 +607,7 @@ def main(argv: list[str] | None = None):
             "trends": scout_out.get("trends", {}),
             "market": scout_out.get("market", {}),
             "fontes_status": scout_out.get("fontes_status", {}),
+            "apify": apify_fontes.resumo_gastos() if apify_fontes.token() else None,
         },
         "gerado_em": datetime.now().isoformat(),
     }

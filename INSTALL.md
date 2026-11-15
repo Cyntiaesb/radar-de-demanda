@@ -47,6 +47,19 @@ ANTHROPIC_API_KEY=sk-ant-sua-chave-aqui
 
 Salve e feche.
 
+**Opcional: as outras fontes pelo Apify.** Sem isso, o Radar traz só o Google Autocomplete e entrega links prontos para Reddit, Reclame Aqui, Mercado Livre, Google Trends e anúncios da Meta, porque esses sites bloqueiam coleta direta. Para o Radar buscar nesses sites sozinho:
+
+1. Crie uma conta em https://console.apify.com/sign-up (o plano grátis vem com um crédito por mês).
+2. Copie o seu token em console.apify.com → Settings → API & Integrations.
+3. No mesmo `.env`, acrescente:
+
+```
+APIFY_TOKEN=apify_api_seu-token-aqui
+APIFY_TETO_USD=1.00
+```
+
+`APIFY_TETO_USD` é o máximo que uma rodada pode gastar no Apify, somando as 5 fontes. O gasto real aparece no fim da rodada e no dossiê.
+
 ### 3. Instalar dependências
 
 Abra o terminal **dentro da pasta RADAR DE DEMANDA**:
@@ -101,11 +114,11 @@ Na caixa de chat, digite:
 ### 3. Aguardar alguns minutos
 
 O Claude roda `python scripts/radar_run.py "advocacia" --sem-pausa` e:
-1. Coleta sinais no Google, Reddit, Reclame Aqui, Mercado Livre e Google Trends (grátis)
+1. Coleta sinais no Google e, se você colocou o `APIFY_TOKEN`, também no Reddit, Reclame Aqui, Mercado Livre, Google Trends e anúncios da Meta
 2. Ranqueia as dores e monta as ofertas com o Claude
 3. Gera o dossiê em `data/dossies/advocacia_<data>.md` (e `.html`, `.csv`, `.json`)
 
-Fonte que bloquear a coleta automática aparece no dossiê como "indisponível hoje", com os links de busca para você abrir à mão. Se a coleta trouxer menos de 10 frases reais, o Radar para antes de gastar com o modelo e diz quais fontes falharam.
+Fonte que não trouxer dado aparece no dossiê como "indisponível hoje", com os links de busca para você abrir à mão. Se a coleta trouxer menos de 10 frases reais, o Radar para antes de gastar com o modelo e diz quais fontes falharam.
 
 Quer também a landing de 9 seções? Peça ao Claude para rodar com `--landing` (1 chamada a mais ao Sonnet).
 
