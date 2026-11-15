@@ -84,6 +84,7 @@ class ApifyFalso:
 class TestApify(unittest.TestCase):
     def setUp(self):
         apify.GASTOS.clear()
+        apify.ESPERA_CONTA = 0
 
     def test_reddit_converte_e_descarta_vazio(self):
         s = apify.reddit(["contador mei"], http=ApifyFalso("reddit"))

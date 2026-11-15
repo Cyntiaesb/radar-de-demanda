@@ -32,6 +32,9 @@ ATORES = {
 # Gasto real de cada coletor nesta rodada: {fonte: usd}
 GASTOS: dict[str, float] = {}
 
+# Pausa entre as releituras do gasto (segundos)
+ESPERA_CONTA = 3.0
+
 
 def token() -> str | None:
     t = (os.environ.get("APIFY_TOKEN") or "").strip()
@@ -49,7 +52,8 @@ def teto_da_fonte(fonte: str) -> float:
     return round(teto_rodada() * ATORES[fonte][1], 2)
 
 
-def _roda(fonte: str, entrada: dict, *, espera: int = 300, http=requests) -> list[dict]:
+def _roda(fonte: str, entrada: dict, *, espera: int = 300, espera_conta: float | None = None,
+          http=requests) -> list[dict]:
     """Roda o coletor da fonte com teto de gasto e devolve os itens."""
     tk = token()
     if not tk:
@@ -66,19 +70,38 @@ def _roda(fonte: str, entrada: dict, *, espera: int = 300, http=requests) -> lis
         raise RuntimeError("o Apify recusou o token (confira o APIFY_TOKEN no .env)")
     r.raise_for_status()
     run = r.json()["data"]
+    pausa = ESPERA_CONTA if espera_conta is None else espera_conta
+
+    def le(url, **kw):
+        # Erro passageiro do Apify (5xx, rede) não derruba a fonte: tenta de novo.
+        for tentativa in range(4):
+            try:
+                resp = http.get(url, headers=cab, timeout=60, **kw)
+                if resp.status_code < 500:
+                    resp.raise_for_status()
+                    return resp.json()
+            except requests.RequestException:
+                if tentativa == 3:
+                    raise
+            time.sleep(pausa * (tentativa + 1))
+        raise RuntimeError("o Apify não respondeu depois de 4 tentativas")
+
     limite = time.time() + espera + 60
     while run.get("status") in ("READY", "RUNNING") and time.time() < limite:
-        time.sleep(5)
-        r = http.get(f"{API}/actor-runs/{run['id']}", headers=cab, timeout=30)
-        r.raise_for_status()
-        run = r.json()["data"]
-    GASTOS[fonte] = round(float(run.get("usageTotalUsd") or 0), 4)
+        time.sleep(5 if pausa else 0)
+        run = le(f"{API}/actor-runs/{run['id']}")["data"]
+    # O Apify fecha a conta alguns segundos depois do fim: relê até o valor parar de mudar.
+    gasto = float(run.get("usageTotalUsd") or 0)
+    for _ in range(4):
+        time.sleep(pausa)
+        novo = float(le(f"{API}/actor-runs/{run['id']}")["data"].get("usageTotalUsd") or 0)
+        if novo == gasto and novo > 0:
+            break
+        gasto = max(gasto, novo)
+    GASTOS[fonte] = round(gasto, 4)
     if run.get("status") not in ("SUCCEEDED", "ABORTED", "TIMED-OUT"):
         raise RuntimeError(f"coletor do Apify terminou com status {run.get('status')}")
-    r = http.get(f"{API}/datasets/{run['defaultDatasetId']}/items",
-                 params={"clean": "true", "limit": 1000}, headers=cab, timeout=60)
-    r.raise_for_status()
-    itens = r.json()
+    itens = le(f"{API}/datasets/{run['defaultDatasetId']}/items", params={"clean": "true", "limit": 1000})
     return itens if isinstance(itens, list) else []
 
 
@@ -254,7 +277,7 @@ def estatisticas_ml(sinais: list[dict]) -> dict:
 
 def google_trends(termos: list[str], *, http=requests) -> list[dict]:
     entrada = {"searchTerms": termos[:5], "isMultiple": False, "geo": "BR",
-               "timeRange": "today 12-m", "maxItems": len(termos[:5])}
+               "timeRange": "", "maxItems": len(termos[:5])}  # "" = últimos 12 meses
     return _converte(_roda("google_trends", entrada, http=http), tendencia_trends)
 
 
